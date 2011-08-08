@@ -1,3 +1,10 @@
 Project created for Blackberry Dev Group San Diego
 
 Subject: QNX Components
+
+
+Setting up Eclipse for ANT
+
+First of all you need to setup an ANT property. 
+Go to Eclipse Settings -> ANT -> runtime -> Properties -> Add Property and type in the name “BB_TABLET_SDK_HOME” and as value the path to your installed Playbook SDK. 
+Insert another property with the name “FLEX_HOME” and point it to the same location … you’ll need this to use the mxmlc task.
