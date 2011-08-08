@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<qnx>
+	<icon>
+		<image>images/appicon.png</image>
+	</icon>
+	<category>core.media</category>
+	<splashscreen>images/splash.jpg</splashscreen>
+	<permission>access_internet, read_device_identifying_information</permission>
+</qnx>

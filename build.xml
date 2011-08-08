@@ -1,0 +1,211 @@
+<project name="Components" default="debug-compile" basedir=".">
+	<description>
+        Build file for Playbook Development
+    </description>
+
+<!-- *****************************************************************
+	
+	    define an ANT Property BB_TABLET_SDK_HOME with the path to the
+        playbook sdk 
+        (Eclipse Settings -> ANT -> runtime -> Properties -> Add Property)
+       
+       
+        project structure: 
+       		/src (AS3 sources)
+        	/lib (swc libraries)
+        	/bin (output folder)
+       
+       
+     *****************************************************************-->
+	
+	
+	
+<!-- *****************************************************************
+		change your project settings here
+     *****************************************************************-->
+	
+	
+	<property name="project.name" value="Main" />
+	<property name="project.src" value="${basedir}/src" />
+	<property name="project.bin" value="${basedir}/bin" />
+	<property name="project.lib" value="${basedir}/libs" />
+	<property name="project.swcs" value="${basedir}/libs/swc" />
+	<property name="project.mainclass" value="${project.src}/${project.name}.as" />
+	<property name="project.xml" value="${project.bin}/${project.name}-app.xml" />
+	<property name="blackberry.xml" value="${project.bin}/blackberry-tablet.xml" />
+	<property name="project.swf" value="${project.bin}/${project.name}.swf" />
+	<property name="project.bar" value="${project.bin}/${project.name}.bar" />
+	
+	<!-- playbook simulator ip -->
+	<property name="device.ip" value="192.168.28.131" />
+	<!-- playbook simulator password -->
+	<property name="device.password" value="playbook" />
+	<!-- your computers ip ... needed for debugging -->
+	<property name="host.ip" value="192.168.1.9" />
+	
+	
+	
+<!-- *****************************************************************
+		don't make any changes
+	 *****************************************************************-->
+	
+	<!-- import project properties -->
+	<property environment="env"/>
+	
+	<!-- compiler, packager, and deployer settings -->
+	<property name="sdk.home" value="${BB_TABLET_SDK_HOME}" />
+	<property name="sdk.adl" value="${sdk.home}/bin/adl"/>
+	<property name="sdk.bbpack" value="${sdk.home}/bin/blackberry-airpackager" />
+	<property name="sdk.bbdeploy" value="${sdk.home}/bin/blackberry-deploy" />
+	
+	<!-- flex tasks --> 
+	<taskdef resource="flexTasks.tasks" classpath="${sdk.home}/ant/lib/flexTasks.jar" />
+	
+	
+	
+	<!-- ================================= 
+	          debug targets              
+	     ================================= -->
+	
+	<!-- compile-debug -->
+	<target name="debug-compile" depends="clean" if="sdk.home" description="compile the app with debugging">
+    	<macro_mxmlc mainclass="${project.mainclass}" output="${project.swf}" debug="true" />
+		<exec executable="${sdk.adl}">
+		  	<arg value="${project.xml}"/>
+		  	<arg value="-nodebug"/>
+		</exec>
+	</target>
+				
+	<!-- debug deploy -->
+	<target name="debug-deploy" depends="clean" if="sdk.home" description="create the app .bar debug package and deploy the app">
+    	<macro_mxmlc mainclass="${project.mainclass}" output="${project.swf}" debug="true" />
+		<!-- include all dirs in bin -->
+		<dirset dir="${project.bin}" id="bin.dirs">
+			<include name="*"/>
+		</dirset>
+		<pathconvert property="bin.dirs.string" refid="bin.dirs" pathsep=" " >
+		 	<map from="${project.bin}/" to=" "/>
+		</pathconvert>
+		
+		<!-- package and deploy -->
+		<exec executable="${sdk.bbpack}" dir="${project.bin}">
+			<arg value="-target" />
+			<arg value="bar-debug" />
+			<arg value="-connect"/>
+			<arg value="${host.ip}"/>
+			<arg value="-package" />
+			<arg value="${project.bar}" />
+			<arg value="-installApp" />
+			<arg value="-launchApp" />
+			<arg value="${project.xml}" />
+			<arg value="${blackberry.xml}" />
+			<arg value="${project.swf}" />
+			<arg value="-devMode" />
+			<arg value="-device" />
+			<arg value="${device.ip}" />
+			<arg value="-password"/>
+			<arg value="${device.password}"/>
+			<arg line="-C ${project.bin} ${bin.dirs.string}" />
+		</exec>
+	</target>
+	
+				
+	<!-- ================================= 
+          release targets              
+     ================================= -->
+	
+	
+	<!-- compile -->
+	<target name="release-compile" depends="clean" if="sdk.home" description="compile the app">
+		<macro_mxmlc mainclass="${project.mainclass}" output="${project.swf}" debug="false" />
+	</target>
+
+	<!-- create-package -->
+	<target name="release-create-package" depends="release-compile" if="sdk.home" description="create the app .bar package">
+		
+		<!-- include all dirs in bin -->
+		<dirset dir="${project.bin}" id="bin.dirs">
+			<include name="*"/>
+		</dirset>
+		<pathconvert property="bin.dirs.string" refid="bin.dirs" pathsep=" " >
+		 	<map from="${project.bin}/" to=" "/>
+		</pathconvert>
+		
+		<exec executable="${sdk.bbpack}" dir="${project.bin}">
+			<arg value="-devMode" />
+			<arg value="-package" />
+			<arg value="${project.bar}" />
+			<arg value="${project.xml}" />
+			<arg value="${blackberry.xml}" />
+			<arg value="${project.swf}" />
+			<arg line="-C ${project.bin} ${bin.dirs.string}" />
+		</exec>
+	</target>
+
+		
+	<!-- deploy -->
+	<target name="release-deploy" depends="release-create-package" if="sdk.home" description="deploy the app in the standard configuration">
+		<exec executable="${sdk.bbdeploy}" dir="${project.bin}">
+			<arg value="-installApp" />
+			<arg value="-launchApp" />
+			<arg value="-device" />
+			<arg value="${device.ip}" />
+			<arg value="-password"/>
+			<arg value="${device.password}"/>
+			<arg value="-package" />
+			<arg value="${project.bar}" />
+		</exec>
+	</target>
+		
+		
+	<!-- ================================= 
+          other targets              
+     ================================= -->
+	
+	<!-- clean -->
+	<target name="clean" description="remove all the compiled files">
+		<delete>
+			<fileset dir="${project.bin}">
+				<include name="*.swf" />
+				<include name="*.bar" />
+				<include name="BAR*.tmp" />
+			</fileset>
+		</delete>
+	</target>
+	
+
+			
+			
+	<!-- ###########################	MACRO-DEFINITIONS ######################### -->
+				
+	<macrodef name="macro_mxmlc">
+		
+		<attribute name="mainclass" />
+		<attribute name="output" />
+		<attribute name="debug" />
+		
+		<element name="settings" optional="true" />
+		
+		<sequential>
+			<echo>=== compile class @{mainclass} to @{output} ===</echo>
+			
+			<mxmlc fork="true" maxmemory="512m" file="@{mainclass}" output="@{output}" debug="@{debug}" verbose-stacktraces="@{debug}" optimize="true" strict="true" benchmark="false" actionscript-file-encoding="UTF-8" keep-generated-actionscript="false">
+		    	<!-- load SDK config -->
+	            <load-config filename="${sdk.home}/frameworks/air-config.xml"/>
+		    	
+		    	<!-- include lib swcs -->
+		    	<library-path dir="${project.swcs}" append="true">
+		    		<include name="*.swc" />
+		    	</library-path>
+	            
+				<!-- additional settings -->
+		    	<settings />
+				
+		    	<source-path path-element="${project.src}"/>
+		    	<source-path path-element="${project.lib}"/>
+	        </mxmlc>	
+		</sequential>
+	</macrodef>
+
+
+</project>
